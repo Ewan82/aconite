@@ -1,0 +1,114 @@
+tmp,40.
+tmp,100.00
+tmp,40.00
+tmp,0.88
+tmp,0.20
+tmp,0.88
+tmp,50.
+tmp,1.0
+tmp,20.0
+tmp,20.
+tmp,0.4
+tmp,128.35892
+tmp,1.9621816 
+tmp,9574.2832  
+tmp,797.85223
+tmp,1828.8442
+tmp,3.6574683
+tmp,2.1
+tmp,0.7
+tmp,-2.5
+tmp,0.1
+tmp,1.0
+tmp,1.0
+tmp,20.
+tmp,1.0
+tmp,20.
+tmp,1.0
+tmp,100.
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0 
+tmp,0.0
+tmp,0.0
+tmp,0.0           
+tmp,0.0   
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0        
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp,0.0
+tmp, 251.21553
+tmp, 789.25684
+tmp, 3882.8145
+tmp, 973.91364
+tmp, 1.3521907
+tmp, 19.156782
+tmp, 258.83551 
+tmp, 195.36192
+tmp, 0.0
+tmp, 45.45455
+tmp, 0.4444444
+tmp. 45.45455
