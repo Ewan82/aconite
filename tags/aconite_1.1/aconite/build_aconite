@@ -1,0 +1,7 @@
+#!/bin/bash
+echo Compiling ACONITE
+
+cd src
+make clean
+make
+cp run_aconite ../.
