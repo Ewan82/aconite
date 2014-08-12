@@ -1,0 +1,23 @@
+CHANGES BETWEEN GMD VERSION AND V1.1
+
+1) state%Cuptake_downreg not used any more
+2) Gerber soil model
+3) growth_potential = growth_potential*min(1.,(state%labileN/state%maxNstore))
+4) Disturbance is simulated
+5)      marg_ineff = abs(marg%integ_Creturn_leafC)**param%marg_ineff_exp
+       leafc_adjust = min(param%MaxallocAdjust,(param%MaxallocAdjust*marg_ineff))
+       marg_ineff =  abs(marg%integ_Creturn_leafN)**param%marg_ineff_exp
+       leafn_adjust = min(param%MaxallocAdjust,(param%MaxallocAdjust*marg_ineff))
+       
+       leafc_adjust = min(leafn_adjust,leafc_adjust)
+       leafn_adjust = leafn_adjust
+       
+6) DOUBLE CHECK THE ALLOCATION RULES
+7)  marg_ineff = (marg%integ_Nreturn_rootC-marg%integ_Nreturn_Raexcess)
+    rootc_adjust = min(param%MaxallocAdjust,(param%MaxallocAdjust*marg_ineff))
+8) state%maxleafC = state%maxleafC - (state%maxleafC - delta_maxleafC)*min(1.,(param%damp_rate/leaf_horizon))
+   state%maxleafN = state%maxleafN - (state%maxleafN - delta_maxleafN)*min(1.,(param%damp_rate/leaf_horizon))
+   state%maxrootC = state%maxrootC - (state%maxrootC - delta_maxrootC)*min(1.,(param%damp_rate/leaf_horizon))
+9) N fertilization is simulated
+10) Soil warming is simulated 
+11) Model spin-up capacity is added
