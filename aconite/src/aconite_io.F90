@@ -815,7 +815,9 @@
 !EOP
 !------------------------------------------------------------------------
 
+
 daily_out(1) = (mstep/365.0)
+print *, daily_out(1)
 header(1) = 'MODEL_YEAR'
 daily_out(2) = cal_year
 header(2) = 'CAL_YEAR'
@@ -970,7 +972,7 @@ open(7,file = io%day_out, status='OLD',ACCESS = 'APPEND')
 if(mstep == ((io%spinup_length+io%print_year_start)*365)) then
     write(7,'(75(A23))'),header(:)
 endif
-write(7,'(75(G12.4))') daily_out(:)
+write(7,'(75(F12.5))') daily_out(:)
 close(7)
 end subroutine write_daily_output
 
@@ -1146,7 +1148,7 @@ open(7,file = io%annual_out, status='OLD',ACCESS = 'APPEND')
 if(mstep == ((io%spinup_length+io%print_year_start)*365)) then
     write(7,'(75(A23))'),header(:)
 endif
-write(7,'(75(G12.4))') annual_out(:)
+write(7,'(75(F12.5))') annual_out(:)
 close(7)
 end subroutine write_annual_output
 
