@@ -602,7 +602,10 @@
 
 if(clim%doy(rstep) == 1) then
 	do i = 1,io%dist_length
+		print *, site%distyear(i),cal_year
         if(site%distyear(i)  == cal_year) then
+        	print *, 'here'
+        	print *, site%distintensity(i)
         	flux%leafC_dist_atm = state%leafC*site%distintensity(i)*site%distremove(i)
         	flux%leafC_dist_litter = state%leafC*site%distintensity(i)*(1-site%distremove(i))
         
@@ -683,6 +686,8 @@ if(clim%doy(rstep) == 1) then
 !-------UPDATE STATE VARIABLES---------------------------
 
       !plant tissues
+      
+    
       state%leafC   = state%leafC + flux%a_labileC_bud_2leaf - &
                       flux%t_leafC - flux%leafC_dist_atm - flux%leafC_dist_litter            
                       

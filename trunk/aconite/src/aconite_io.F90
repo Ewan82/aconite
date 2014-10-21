@@ -1148,7 +1148,7 @@ open(7,file = io%annual_out, status='OLD',ACCESS = 'APPEND')
 if(mstep == ((io%spinup_length+io%print_year_start)*365)) then
     write(7,'(75(A23))'),header(:)
 endif
-write(7,'(75(F12.5))') annual_out(:)
+write(7,'(75(F12.4))') annual_out(:)
 close(7)
 end subroutine write_annual_output
 
