@@ -9,10 +9,14 @@
       private 
 
       type,public :: state_type
-         real,pointer :: leafC  
+         real,pointer :: leafC
+         real,pointer :: leafC_c1
+         real,pointer :: leafC_c2  
          real,pointer :: woodC
          real,pointer :: rootC
          real, pointer :: leafN
+         real, pointer :: leafN_c1
+         real, pointer :: leafN_c2
          real, pointer :: woodN
          real, pointer :: rootN 
          real ,pointer :: labileC
@@ -140,6 +144,7 @@
           real, pointer :: soilN_3
           real, pointer :: soilN_4
           real, pointer :: soilwarm_degree
+          real, pointer :: leaf_out_doy
       end type state_type
 
       type,public :: marg_type   
@@ -292,14 +297,18 @@
          real,pointer :: ndep_nh4
          real,pointer :: ndep_no3
          real,pointer :: retransN
-         real,pointer :: leafC_dist_atm
-         real,pointer :: leafC_dist_litter
+         real,pointer :: leafC_c1_dist_atm
+         real,pointer :: leafC_c1_dist_litter
+         real,pointer :: leafC_c2_dist_atm
+         real,pointer :: leafC_c2_dist_litter
          real,pointer :: woodC_dist_atm
 		 real,pointer :: woodC_dist_litter
          real,pointer :: rootC_dist_atm
          real,pointer :: rootC_dist_litter
-         real,pointer :: leafN_dist_atm
-         real,pointer :: leafN_dist_litter
+         real,pointer :: leafN_c1_dist_atm
+         real,pointer :: leafN_c1_dist_litter
+         real,pointer :: leafN_c2_dist_atm
+         real,pointer :: leafN_c2_dist_litter
          real,pointer :: woodN_dist_atm
          real,pointer :: woodN_dist_litter
          real,pointer :: rootN_dist_atm
@@ -370,7 +379,9 @@
          real,pointer :: litterC_to_soil1
          real,pointer :: litterC_to_soil2
          real,pointer :: litterN_to_soil1
-         real,pointer :: litterN_to_soil2   
+         real,pointer :: litterN_to_soil2 
+         real,pointer :: leafC_c1_to_c2  
+         real,pointer :: leafN_c1_to_c2
       end type flux_type
 
       type,public :: param_type

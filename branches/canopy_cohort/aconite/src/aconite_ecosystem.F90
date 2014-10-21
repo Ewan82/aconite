@@ -37,6 +37,7 @@
       real, parameter :: pi = 3.141592653589793239
       real :: litterfallC,litterfallN,rt, gross_nmin, Nav, avail_nh4_conc,avail_no3_conc
       real :: krate_adjust,q_adjust
+      real :: leafC_dist,leafN_dist
 !EOP
 !-----------------------------------------------------------------------
 
@@ -97,20 +98,7 @@
           call year_update(1,year_count)     
        endif
 
-!--- PHENOLOGY ----------------------
-      if(site%seasonal == 1) then			!seasonal growing season
-          !in growing season, so grow
-          if((state%GDDTot >= param%GDDStart) .AND. (clim%doy(rstep) < param%SenescStart)) then   
-              growth_potential = param%growth_potential_param    
-          else
-              growth_potential = 0.0	
-          endif
 
-     else					
-          !full year growing season
-          growth_potential = param%growth_potential_param
-     endif
-     
 !--- PLANT STRUCTURE ------------------------ 
 
       state%lai = state%leafC / param%lca
@@ -132,37 +120,14 @@
       
 !-----TISSUE TURNOVER ------------------------
 
-      if(site%seasonal == 1) then				!is the ecosystem in a seasonal climate?
-          if(clim%doy(rstep) >= param%SenescStart) then	!after sensence date, drop leaves
-                 if(param%t_leaf > (1/365.)) then ! SEASONAL BROADLEAF
-                     if(state%leafC < (state%maxleafC * (1-param%stocks_close_prop))) then
-                     	flux%t_leafC = state%leafC
-              			flux%t_leafN = state%leafN * (1 - param%trans_frac)
-              			flux%retransN = (state%leafN * param%trans_frac)
-                     else
-              			flux%t_leafC = state%leafC * param%leaf_shed_rate
-              			flux%t_leafN = (state%leafN * param%leaf_shed_rate)*(1 - param%trans_frac) 
-              			flux%retransN = (state%leafN * param%leaf_shed_rate) *param%trans_frac     			
-                    endif
-                 else   
-
-                    if(clim%doy(rstep) >= param%SenescStart .and. clim%doy(rstep) < (param%SenescStart +1)) then !SEASONAL EVERGREEN
-                       state%LeafTurnoverTarget = state%leafC - state%leafC*(365.*param%t_leaf)
-                    elseif(state%leafC > state%LeafTurnoverTarget) then 
-                        flux%t_leafC = (state%leafC - state%LeafTurnoverTarget)*param%leaf_shed_rate
-                        flux%t_leafN = flux%t_leafC * (state%leafN/state%leafC)*(1 - param%trans_frac) 
-                        flux%retransN = flux%t_leafC * (state%leafN/state%leafC)*param%trans_frac
-                    else
-                        flux%t_leafC = 0.0
-                        flux%t_leafN = 0.0
-                    endif
-                 endif		
-          endif
-      else  ! NON-SEASONAL EVERGREEN
-          flux%t_leafC = (state%leafC*param%t_leaf)
-          flux%t_leafN = (state%leafN * param%t_leaf)*(1 - param%trans_frac)
-          flux%retransN =  (state%leafN * param%t_leaf)*(param%trans_frac)
-      endif
+       if(clim%doy(rstep) >= param%SenescStart) then	!after sensence date, drop leaves from current cohort
+       		flux%leafC_c1_to_c2 = state%leafC_c1
+       		flux%leafN_c1_to_c2 = state%leafC_c2
+       endif 
+       		
+      flux%t_leafC = state%leafC_c2*param%t_leaf
+      flux%t_leafN = state%leafN_c2*param%t_leaf * (1 - param%trans_frac)
+      flux%retransN = state%leafN_c2*param%t_leaf * (param%trans_frac)
       
       flux%t_woodC = state%woodC * param%t_wood
       flux%t_rootC = state%rootC * param%t_root
@@ -172,65 +137,9 @@
 
 !--- LITTER AND SOIL CALCULATIONS --------------------------------
 
-
-
-
-	  if(param%soil_model == 1) then
-	  	!NOTE: SIMPLE TWO POOL MODEL 
-      	flux%t_cwdC = state%cwdC * param%t_cwd * Rh_temp_resp
-      	flux%t_cwdN = state%cwdN * param%t_cwd * Rh_temp_resp 
-      	flux%t_litterC = state%litterC * param%t_litter * Rh_temp_resp 
-      	litter_to_atm = flux%t_litterC*(1-param%mCUE)
-      	litter_to_soil = flux%t_litterC*(param%mCUE)
-      	flux%t_litterN = state%litterN * param%t_litter * Rh_temp_resp
-      	total_immob = ((litter_to_soil)/param%soilCN) - flux%t_litterN
-      	if(total_immob < 0) then
-          	flux%nh4_immob = ((litter_to_soil)/param%soilCN) -flux%t_litterN 
-          	flux%no3_immob = 0.0
-      	else
-          	flux%nh4_immob = (state%nh4/(state%nh4+state%no3))*total_immob
-          	flux%no3_immob = (state%no3/(state%nh4+state%no3))*total_immob
-      	endif
-      	flux%t_soilC =  state%soilC * param%t_soil* Rh_temp_resp 
-      	flux%t_soilN =  state%soilN * param%t_soil* Rh_temp_resp 
-      	flux%leachDON = flux%t_soilN*param%Nturn_dep_loss 
-      	flux%t_soilN = flux%t_soilN - flux%leachDON    
-
-      	avail_nh4 = state%nh4
-      	avail_no3 = state%no3
-
-      	if(avail_nh4 >= flux%nh4_immob)then
-          	avail_nh4 = avail_nh4 - flux%nh4_immob
-      	else
-          	flux%nh4_immob = avail_nh4
-          	avail_nh4 = 0
-      	endif
-
-      	if(avail_no3 >= flux%no3_immob)then
-          	avail_no3 = avail_no3 - flux%no3_immob
-      	else
-          	flux%no3_immob = avail_no3
-        	avail_no3 = 0
-      	endif
-
-      	if((flux%no3_immob + flux%nh4_immob) < total_immob) then
-           	IF(total_immob.lt.0)THEN
-      	       flux%Rh_total = litter_to_atm + flux%t_soilC
-      	   	ENDIF
-      
-         	flux%t_litterC = flux%t_litterC * ((flux%no3_immob +flux%nh4_immob)/total_immob)
-         	litter_to_atm = flux%t_litterC * (1.-param%mCUE)
-         	litter_to_soil = flux%t_litterC * (param%mCUE)
-         	flux%t_litterN = flux%t_litterN * ((flux%no3_immob +flux%nh4_immob)/total_immob)
-      	endif
-
-      	flux%Rh_total = litter_to_atm + flux%t_soilC
-      	gross_nmin = flux%t_soilN
-      
-      else
-        !SOIL MODEL IN GERBER ET AL. 2010 GLOBAL BGC CYCLES
-	  	avail_nh4 = state%nh4-(param%bufferNH4*state%nh4)/(1+param%bufferNH4)
-      	avail_no3 = state%no3-(param%bufferNO3*state%no3)/(1+param%bufferNO3)
+     !SOIL MODEL IN GERBER ET AL. 2010 GLOBAL BGC CYCLES
+	  avail_nh4 = state%nh4-(param%bufferNH4*state%nh4)/(1+param%bufferNH4)
+      avail_no3 = state%no3-(param%bufferNO3*state%no3)/(1+param%bufferNO3)
       	avail_nh4_conc = max(avail_nh4/param%rooting_depth,0.0)
       	avail_no3_conc = max(avail_no3/param%rooting_depth,0.0)
       	Nav = avail_nh4_conc + avail_no3_conc
@@ -287,9 +196,7 @@
 
         flux%Rh_total = flux%soil1_to_atm_C + flux%soil2_to_atm_C + flux%soil3_to_atm_C + &
         	flux%soil4_to_atm_C 
-        	
-      endif
-        
+
 !------ PHOTOSYNTHESIS (GPP) ------
         
       if(state%lai > 0) then
@@ -339,22 +246,23 @@
 
       ! STEP 1: ALLOCATE ALL BUDC AND BUDN IN FIRST DAY OF SPRING LEAF OUT 
 			
-      if(param%t_leaf > (1.0/365.0)) then		!Deciduous 
-          instant_Creturn_leafCN = (marg%GPP_leafCN - marg%Rm_leafCN)* &
-             (param%SenescStart - clim%doy(state%rstep)) -  marg%Rg_leafC - param%add_C
-      else	!evergreen 
-          instant_Creturn_leafCN = (marg%GPP_leafCN - marg%Rm_leafCN) &
-             /param%t_leaf -  marg%Rg_leafC - param%add_C           
-      endif			
+      instant_Creturn_leafCN = (marg%GPP_leafCN - marg%Rm_leafCN)* &
+             (param%SenescStart - clim%doy(state%rstep)+1/param%t_leaf) -  marg%Rg_leafC - param%add_C
+
+      if((state%GDDTot >= param%GDDStart) .AND. (clim%doy(rstep) < param%SenescStart)) then   
+        growth_potential = param%growth_potential_param*min(1.,(state%labileN/state%maxNstore))
+      else
+        growth_potential = 0.0	
+      endif
            
-      growth_potential = growth_potential*min(1.,(state%labileN/state%maxNstore))
-      
 	  if(growth_potential > 0.0) then
 	  	    
 	  	tmp_leafC = state%leafC
 	  
-	 	if((instant_Creturn_leafCN >= 0 .and. state%leafC < state%maxleafC) .or. state%leafC == 0.0) then
-
+	 	if((instant_Creturn_leafCN >= 0 .and. state%leafC < state%maxleafC) .or. state%leafC_c1 == 0.0) then
+		  if(state%leaf_out_doy == 0) then
+		  	state%leaf_out_doy = clim%doy(state%rstep)
+		  endif
 	      flux%a_labileC_bud_2leaf = min(state%labileC_bud, (state%maxleafC-state%leafC))
           flux%a_labileN_bud_2leaf = min(state%labileN_bud,  &
           	 ((state%labileN_bud/state%labileC_bud)*flux%a_labileC_bud_2leaf))
@@ -526,8 +434,7 @@
         flux%a_labileC_2Ra = min((state%maxRaC-state%labileC_Ra),(avail_C))
         avail_C = avail_C - flux%a_labileC_2Ra
      endif 
-     
-       
+    
 !----  NITRIFICATION -------------
 
 	  avail_nh4 = avail_nh4-(param%bufferNH4*avail_nh4)/(1+param%bufferNH4)
@@ -602,12 +509,13 @@
 
 if(clim%doy(rstep) == 1) then
 	do i = 1,io%dist_length
-		print *, site%distyear(i),cal_year
         if(site%distyear(i)  == cal_year) then
-        	print *, 'here'
-        	print *, site%distintensity(i)
-        	flux%leafC_dist_atm = state%leafC*site%distintensity(i)*site%distremove(i)
-        	flux%leafC_dist_litter = state%leafC*site%distintensity(i)*(1-site%distremove(i))
+
+        	flux%leafC_c1_dist_atm = state%leafC_c1*site%distintensity(i)*site%distremove(i)
+        	flux%leafC_c1_dist_litter = state%leafC_c1*site%distintensity(i)*(1-site%distremove(i))
+        	
+        	flux%leafC_c2_dist_atm = state%leafC_c2*site%distintensity(i)*site%distremove(i)
+        	flux%leafC_c2_dist_litter = state%leafC_c2*site%distintensity(i)*(1-site%distremove(i))
         
         	flux%woodC_dist_atm = state%woodC*site%distintensity(i)*site%distremove(i)
 			flux%woodC_dist_litter = state%woodC*site%distintensity(i)*(1-site%distremove(i))
@@ -615,9 +523,12 @@ if(clim%doy(rstep) == 1) then
         	flux%rootC_dist_atm = state%rootC*site%distintensity(i)*site%distremove(i)
         	flux%rootC_dist_litter = state%rootC*site%distintensity(i)*(1-site%distremove(i))
         	
-        	flux%leafN_dist_atm = state%leafN*site%distintensity(i)*site%distremove(i)
-        	flux%leafN_dist_litter = state%leafN*site%distintensity(i)*(1-site%distremove(i))
-        	
+        	flux%leafN_c1_dist_atm = state%leafN_c1*site%distintensity(i)*site%distremove(i)
+        	flux%leafN_c1_dist_litter = state%leafN_c1*site%distintensity(i)*(1-site%distremove(i))
+  
+          	flux%leafN_c2_dist_atm = state%leafN_c2*site%distintensity(i)*site%distremove(i)
+        	flux%leafN_c2_dist_litter = state%leafN_c2*site%distintensity(i)*(1-site%distremove(i))
+        	      	
         	flux%woodN_dist_atm = state%woodN*site%distintensity(i)*site%distremove(i)
         	flux%woodN_dist_litter = state%woodN*site%distintensity(i)*(1-site%distremove(i))
         	
@@ -643,21 +554,11 @@ if(clim%doy(rstep) == 1) then
 		    state%maxleafN = state%maxleafN *(1-site%distintensity(i))
 		    state%maxrootC = state%maxrootC *(1-site%distintensity(i))
 		    
-		    if(param%soil_model == 1) then
-		    
-		    	flux%dist_litterC = flux%leafC_dist_litter + flux%rootC_dist_litter + flux%labileC_dist_litter &
-		    		+ flux%labileC_bud_dist_litter + flux%labileC_Ra_dist_litter
-		    		
-		    	flux%dist_litterN = flux%leafN_dist_litter + flux%rootN_dist_litter + flux%labileN_dist_litter &
-		    		+ flux%labileN_bud_dist_litter
-		    		
-		    	flux%dist_cwdC = flux%woodC_dist_litter
-		    	flux%dist_cwdN = flux%woodN_dist_litter
-		    else
-		    
-		    	litterfallC = flux%leafC_dist_litter + flux%rootC_dist_litter + flux%labileC_dist_litter &
+		    leafC_dist = flux%leafC_c1_dist_litter + flux%leafC_c2_dist_litter
+		    leafN_dist = flux%leafN_c1_dist_litter + flux%leafN_c2_dist_litter	    
+		    	litterfallC = leafC_dist + flux%rootC_dist_litter + flux%labileC_dist_litter &
 		    		+ flux%labileC_bud_dist_litter + flux%labileC_Ra_dist_litter + flux%woodC_dist_litter
-      			litterfallN = flux%leafN_dist_litter + flux%rootN_dist_litter + flux%labileN_dist_litter &
+      			litterfallN = leafN_dist + flux%rootN_dist_litter + flux%labileN_dist_litter &
 		    		+ flux%labileN_bud_dist_litter + flux%woodN_dist_litter
  
       			rt = litterfallC/litterfallN
@@ -667,7 +568,6 @@ if(clim%doy(rstep) == 1) then
       				*min((rt/param%rls_min),1.))
       			flux%dist_litterN_to_soil2 = litterfallN*(1-(max((param%aLF - param%bLF* param%flig*rt),param%flig_min)&
       				*min((rt/param%rls_min),1.)))
-		    endif
 		    
 		   endif 
     end do    
@@ -686,17 +586,23 @@ if(clim%doy(rstep) == 1) then
 !-------UPDATE STATE VARIABLES---------------------------
 
       !plant tissues
-      
+       
+      state%leafC_c1 =  state%leafC_c1 + flux%a_labileC_bud_2leaf - &
+                      flux%leafC_c1_to_c2 - flux%leafC_c1_dist_atm - flux%leafC_c1_dist_litter 
+      state%leafC_c2 =  state%leafC_c2 + flux%leafC_c1_to_c2 - &
+                      flux%t_leafC - flux%leafC_c2_dist_atm - flux%leafC_c2_dist_litter
     
-      state%leafC   = state%leafC + flux%a_labileC_bud_2leaf - &
-                      flux%t_leafC - flux%leafC_dist_atm - flux%leafC_dist_litter            
+      state%leafC   =  state%leafC_c1 + state%leafC_c2
                       
       state%woodC   = state%woodC + flux%a_woodC - flux%t_woodC - flux%woodC_dist_atm - flux%woodC_dist_litter
       
       state%rootC   = state%rootC + flux%a_rootC - flux%t_rootC - flux%rootC_dist_atm - flux%rootC_dist_litter
 
-      state%leafN   = state%leafN  + flux%a_labileN_bud_2leaf-  &
-                      flux%t_leafN - flux%retransN - flux%leafN_dist_atm - flux%leafN_dist_litter
+      state%leafN_c1   = state%leafN  + flux%a_labileN_bud_2leaf-  &
+                      flux%leafN_c1_to_c2 - flux%leafN_c1_dist_atm - flux%leafN_c1_dist_litter
+                      
+      state%leafN_c1 =  state%leafN  + flux%leafN_c1_to_c2 - &
+                      flux%t_leafN - flux%retransN - flux%leafN_c2_dist_atm - flux%leafN_c2_dist_litter
                       
       state%woodN   = state%woodN + flux%a_woodN - flux%t_woodN - flux%woodN_dist_atm - flux%woodN_dist_litter
       state%rootN   = state%rootN + flux%a_rootN - flux%t_rootN - flux%rootN_dist_atm - flux%rootN_dist_litter
@@ -725,38 +631,26 @@ if(clim%doy(rstep) == 1) then
                        - flux%labileN_bud_dist_atm - flux%labileN_bud_dist_litter
 
       !dead organic matter
-      
-      if(param%soil_model == 1) then
-      	state%litterC = state%litterC + flux%t_leafC + flux%t_rootC + &
-                flux%t_cwdC - flux%t_litterC + flux%dist_litterC
-      	state%litterN = state%litterN + flux%t_leafN + flux%t_rootN + &
-                flux%t_cwdN - flux%t_litterN   + flux%dist_litterN
-      	state%soilC = state%soilC + litter_to_soil - flux%t_soilC 
-      	state%soilN = state%soilN + flux%t_litterN - flux%t_soilN + &
-                flux%nh4_immob + flux%no3_immob-flux%leachDON 
-      	state%cwdC = state%cwdC + flux%t_woodC - flux%t_cwdC
-      	state%cwdN = state%cwdN + flux%t_woodN - flux%t_cwdN
-      else
-      	state%soilC_1 = state%soilC_1 + flux%litterC_to_soil1 - flux%soil1_to_atm_C + &
-      		flux%dist_litterC_to_soil1
-      	state%soilN_1 = state%soilN_1 + flux%litterN_to_soil1 - flux%soil1_to_NH4 + &
-      		flux%dist_litterN_to_soil1
-      	state%soilC_2 = state%soilC_2 + flux%litterC_to_soil2 - flux%soil2_to_atm_C - &
-      		flux%soil2_to_soil3_C - flux%soil2_to_soil4_C + flux%dist_litterC_to_soil2
-      	state%soilN_2 = state%soilN_2 + flux%litterN_to_soil2 - flux%soil2_to_NH4 + &
-      		flux%dist_litterN_to_soil2
-      	state%soilC_3 = state%soilC_3 + flux%soil2_to_soil3_C - flux%soil3_to_atm_C -flux%leachDOC
-      	state%soilN_3 = state%soilN_3 + flux%soil2_to_soil3_N - flux%soil3_to_NH4 - flux%leachDON
-      	state%soilC_4 = state%soilC_4 + flux%soil2_to_soil4_C-  flux%soil4_to_atm_C
-      	state%soilN_4 = state%soilN_4 + flux%soil2_to_soil4_N - flux%soil4_to_NH4
-      	state%litterC = state%soilC_1 + state%soilC_2
-      	state%litterN = state%soilN_1 + state%soilN_2
-      	state%soilC = state%soilC_3 + state%soilC_4
-      	state%soilN = state%soilN_3 + state%soilN_4
-      	state%cwdC = 0
-      	state%cwdN = 0
-      endif
 
+      state%soilC_1 = state%soilC_1 + flux%litterC_to_soil1 - flux%soil1_to_atm_C + &
+      		flux%dist_litterC_to_soil1
+      state%soilN_1 = state%soilN_1 + flux%litterN_to_soil1 - flux%soil1_to_NH4 + &
+      		flux%dist_litterN_to_soil1
+      state%soilC_2 = state%soilC_2 + flux%litterC_to_soil2 - flux%soil2_to_atm_C - &
+      		flux%soil2_to_soil3_C - flux%soil2_to_soil4_C + flux%dist_litterC_to_soil2
+      state%soilN_2 = state%soilN_2 + flux%litterN_to_soil2 - flux%soil2_to_NH4 + &
+      		flux%dist_litterN_to_soil2
+      state%soilC_3 = state%soilC_3 + flux%soil2_to_soil3_C - flux%soil3_to_atm_C -flux%leachDOC
+      state%soilN_3 = state%soilN_3 + flux%soil2_to_soil3_N - flux%soil3_to_NH4 - flux%leachDON
+      state%soilC_4 = state%soilC_4 + flux%soil2_to_soil4_C-  flux%soil4_to_atm_C
+      state%soilN_4 = state%soilN_4 + flux%soil2_to_soil4_N - flux%soil4_to_NH4
+      state%litterC = state%soilC_1 + state%soilC_2
+      state%litterN = state%soilN_1 + state%soilN_2
+      state%soilC = state%soilC_3 + state%soilC_4
+      state%soilN = state%soilN_3 + state%soilN_4
+      state%cwdC = 0
+      state%cwdN = 0
+      
       !inorganic pools
       state%nh4 = state%nh4 + flux%ndep_nh4 + gross_nmin - &
                flux%nh4_uptake - flux%nh4_immob - flux%nitr + flux%nfert_nh4
@@ -769,16 +663,11 @@ if(clim%doy(rstep) == 1) then
                state%labileC + state%labileC_bud + state%labileC_Ra
       state%totvegn = state%leafN + state%woodN + state%rootN + &
                state%labileN + state%labileN_bud
-      if(param%soil_model == 1) then
-         state%totalC = state%totvegc + state%litterC +state%cwdC + &
-               state%soilC  
-         state%totalN = state%totvegn + state%litterN + state%cwdN +&
-               state%soilN + state%nh4 + state%no3 
-      else
-         state%totalC = state%totvegc + state%soilC_1 + state%soilC_2 + state%soilC_3 + state%soilC_4
-         state%totalN = state%totvegn + state%soilN_1 + state%soilN_2 + state%soilN_3 + &
+
+      state%totalC = state%totvegc + state%soilC_1 + state%soilC_2 + state%soilC_3 + state%soilC_4
+      state%totalN = state%totvegn + state%soilN_1 + state%soilN_2 + state%soilN_3 + &
             	state%soilN_4  + state%nh4 + state%no3    
-      endif        
+     
       flux%net_nmin =(gross_nmin -flux%nh4_immob - flux%no3_immob)
 
       ! SET CURRENT VEGETATION C:N RATIOS
