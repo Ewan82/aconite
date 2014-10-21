@@ -54,10 +54,14 @@
 !------------------------------------------------------------------------
       
           
-          allocate(state%leafC)  
+          allocate(state%leafC) 
+          allocate(state%leafC_c1)
+          allocate(state%leafC_c2) 
           allocate(state%woodC)
           allocate(state%rootC)
           allocate(state%leafN)
+          allocate(state%leafN_c1)
+          allocate(state%leafN_c2)
           allocate(state%woodN)
           allocate(state%rootN)
           allocate(state%labileC)
@@ -182,11 +186,16 @@
           allocate(state%soilN_3)
           allocate(state%soilN_4)
           allocate(state%soilwarm_degree)
+          allocate(state%leaf_out_doy)
 
           state%leafC= 100.		!100
+          state%leafC_c1 = 0.0
+          state%leafC_c2 = state%leafC
           state%woodC =10000.		!5000
           state%rootC= 200.		!100
           state%leafN= state%leafC/param%leafCN 
+          state%leafN_c1 = 0.0
+          state%leafN_c2 = state%leafN
           state%woodN= state%woodC/param%woodCN
           state%rootN= state%rootC/param%rootCN 
           state%labileC= 10.
@@ -306,6 +315,7 @@
           state%soilN_3= 258.83551 
           state%soilN_4= 195.36192  
           state%soilwarm_degree= 0.0
+          state%leaf_out_doy = 0.0
           
           if(param%soil_model==1)then
             state%totalC_prev = state%totvegc_prev + state%litterC + state%cwdC + state%soilC
@@ -655,14 +665,18 @@
       allocate(flux%Ndep_nh4)
       allocate(flux%Ndep_no3)
       allocate(flux%retransN)
-      allocate(flux%leafC_dist_atm)
-      allocate(flux%leafC_dist_litter)
+      allocate(flux%leafC_c1_dist_atm)
+      allocate(flux%leafC_c1_dist_litter)
+      allocate(flux%leafC_c2_dist_atm)
+      allocate(flux%leafC_c2_dist_litter)
       allocate(flux%woodC_dist_atm)
 	  allocate(flux%woodC_dist_litter)
       allocate(flux%rootC_dist_atm)
       allocate(flux%rootC_dist_litter)
-      allocate(flux%leafN_dist_atm)
-      allocate(flux%leafN_dist_litter)
+      allocate(flux%leafN_c1_dist_atm)
+      allocate(flux%leafN_c1_dist_litter)
+      allocate(flux%leafN_c2_dist_atm)
+      allocate(flux%leafN_c2_dist_litter)
       allocate(flux%woodN_dist_atm)
       allocate(flux%woodN_dist_litter)
       allocate(flux%rootN_dist_atm)
@@ -734,6 +748,8 @@
       allocate(flux%litterC_to_soil2)
       allocate(flux%litterN_to_soil1)
       allocate(flux%litterN_to_soil2)
+      allocate(flux%leafC_c1_to_c2)
+      allocate(flux%leafN_c1_to_c2)
 
       flux%gpp=0.0
       flux%npp=0.0
@@ -783,14 +799,18 @@
       flux%Ndep_nh4 = 0.0
       flux%Ndep_no3 = 0.0
       flux%retransN =0.0
-      flux%leafC_dist_atm =0.0
-      flux%leafC_dist_litter =0.0
+      flux%leafC_c1_dist_atm =0.0
+      flux%leafC_c1_dist_litter =0.0
+      flux%leafC_c2_dist_atm =0.0
+      flux%leafC_c2_dist_litter =0.0
       flux%woodC_dist_atm =0.0
 	  flux%woodC_dist_litter =0.0
       flux%rootC_dist_atm =0.0
       flux%rootC_dist_litter =0.0
-      flux%leafN_dist_atm =0.0
-      flux%leafN_dist_litter =0.0
+      flux%leafN_c1_dist_atm =0.0
+      flux%leafN_c1_dist_litter =0.0
+      flux%leafN_c2_dist_atm =0.0
+      flux%leafN_c2_dist_litter =0.0
       flux%woodN_dist_atm =0.0
       flux%woodN_dist_litter =0.0
       flux%rootN_dist_atm =0.0
@@ -862,6 +882,8 @@
       flux%litterC_to_soil2 = 0.0
       flux%litterN_to_soil1 = 0.0
       flux%litterN_to_soil2 = 0.0
+      flux%leafC_c1_to_c2 = 0.0
+      flux%leafN_c1_to_c2 = 0.0
 
       end subroutine init_flux
 

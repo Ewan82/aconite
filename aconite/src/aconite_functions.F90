@@ -161,10 +161,11 @@
           delta_stateC = state%totalC - state%totalC_prev
           delta_stateN = state%totalN - state%totalN_prev
           N_flux = flux%Nfix + (flux%ndep_nh4 + flux%ndep_no3) - flux%leachN - flux%leachDON - &
-          	flux%leafN_dist_atm  - flux%woodN_dist_atm - flux%rootN_dist_atm - flux%labileN_dist_atm - &
-          	flux%labileN_bud_dist_atm + flux%nfert_nh4 + flux%nfert_no3
-          C_flux = flux%NEE - flux%leafC_dist_atm - flux%woodC_dist_atm - flux%rootC_dist_atm - &
-          	flux%labileC_dist_atm - flux%labileC_bud_dist_atm - flux%labileC_Ra_dist_atm - flux%leachDOC
+          	flux%leafN_c1_dist_atm - flux%leafN_c2_dist_atm - flux%woodN_dist_atm - flux%rootN_dist_atm - &
+          	flux%labileN_dist_atm - flux%labileN_bud_dist_atm + flux%nfert_nh4 + flux%nfert_no3
+          C_flux = flux%NEE - flux%leafC_c1_dist_atm - flux%leafC_c2_dist_atm -flux%woodC_dist_atm - &
+          flux%rootC_dist_atm - flux%labileC_dist_atm - flux%labileC_bud_dist_atm - &
+          flux%labileC_Ra_dist_atm - flux%leachDOC
           pass = 1
           if(abs(N_flux - delta_stateN) > 0.05) then
              print *,'N not in balance',(delta_stateN - N_flux)
@@ -339,7 +340,6 @@
 !EOP
 !-----------------------------------------------------------------------
 
-
    if(state%leafC > 0) then  
       marg%annual_GPP_leafC = marg%annual_GPP_leafC + marg%GPP_leafC
       marg%annual_Rm_leafC = marg%annual_Rm_leafC + marg%Rm_leafC
@@ -408,14 +408,12 @@
        state%hitmaxrootC = 0
        state%wood_requirement = 0.0
        
+       
        ! THIS IS WHERE THE MARGINAL RETURNS ARE CALCULATED   
               
-       if(param%t_leaf>(1/365.) .and. site%seasonal == 1.0) then
-          leaf_horizon = 1.0
-       else
-          leaf_horizon = (param%t_leaf*365.)
-       endif
-      
+       leaf_horizon = 365/((param%SenescStart - state%leaf_out_doy)+1/param%t_leaf)
+       leaf_horizon = min(1.0,leaf_horizon)      
+
        root_horizon = (param%t_root*365.)
        	
  	   marg%integ_Creturn_leafC =((marg%integ_GPP_leafC - marg%integ_Rm_leafC) &
@@ -570,7 +568,9 @@
         state%prev_labileC = state%labileC     
         state%prev_labileN = state%labileN
         state%min_wood_deficit = 0.0
-        state%leafN_deficit = 0.0       
+        state%leafN_deficit = 0.0  
+        state%leaf_out_doy = 0.0 
+            
                                         
         marg%annual_GPP_leafC = 0.0
         marg%annual_Rm_leafC = 0.0
@@ -655,14 +655,18 @@
       flux%Nfix=0.0
       flux%Ndep_no3 = 0.0
       flux%retransN =0.0
-      flux%leafC_dist_atm =0.0
-      flux%leafC_dist_litter =0.0
+      flux%leafC_c1_dist_atm =0.0
+      flux%leafC_c1_dist_litter =0.0
+      flux%leafC_c2_dist_atm =0.0
+      flux%leafC_c2_dist_litter =0.0
       flux%woodC_dist_atm =0.0
 	  flux%woodC_dist_litter =0.0
       flux%rootC_dist_atm =0.0
       flux%rootC_dist_litter =0.0
-      flux%leafN_dist_atm =0.0
-      flux%leafN_dist_litter =0.0
+      flux%leafN_c1_dist_atm =0.0
+      flux%leafN_c1_dist_litter =0.0
+      flux%leafN_c2_dist_atm =0.0
+      flux%leafN_c2_dist_litter =0.0
       flux%woodN_dist_atm =0.0
       flux%woodN_dist_litter =0.0
       flux%rootN_dist_atm =0.0
@@ -677,7 +681,7 @@
       flux%labileN_dist_litter	 =0.0
       flux%labileN_bud_dist_atm =0.0
       flux%labileN_bud_dist_litter =0.0	
-      flux%dist_litterC    		 =0.0
+      flux%dist_litterC=0.0
 	  flux%dist_litterN =0.0
 	  flux%dist_cwdC =0.0
 	  flux%dist_cwdN  =0.0
@@ -685,6 +689,8 @@
       flux%dist_litterC_to_soil2 =0.0
       flux%dist_litterN_to_soil1 =0.0
       flux%dist_litterN_to_soil2 =0.0
+      flux%leafC_c1_to_c2 = 0.0
+      flux%leafN_c1_to_c2 = 0.0
       
      end subroutine zero_fluxes
 !-----------------------------------------------------------------------
