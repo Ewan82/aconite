@@ -52,12 +52,12 @@
      
       model_year = 0
       cal_year = io%sim_start_year 
+      year_count = 0
       
   
       print *,'STARTING SIMULATION'
 
       do mstep = 1,((io%sim_length+io%spinup_length)*365)
-    
            state%rstep = state%rstep + 1
            if(state%rstep == (io%clim_length+1).OR. (mstep == (io%spinup_clim_length*365)+1)) then
                state%rstep = 1
@@ -87,9 +87,9 @@
            endif  
            
            call zero_fluxes()    
-
+           
            if(year_count == 365) then
-              print'(A21,1x,F4.0,1x,A15,1x,I4,1x,A14,1x,A4)', 'Number of sim. years',(mstep/365.0),&
+              print'(A21,1x,F5.0,1x,A15,1x,I4,1x,A14,1x,A4)', 'Number of sim. years',(mstep/365.0),&
               	'; calendar year',cal_year,'; in spinup? =',in_spinup
               cal_year = cal_year +1 
               year_count = 0 

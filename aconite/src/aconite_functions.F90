@@ -435,9 +435,9 @@
        		state%maxleafN = state%maxleafC/state%leafCN
        endif
   
- 	   marg_ineff = abs(marg%integ_Creturn_leafC)**param%marg_ineff_exp
+ 	   marg_ineff = abs(marg%integ_Creturn_leafC/param%add_C)**param%marg_ineff_exp
        leafc_adjust = min(param%MaxallocAdjust,(param%MaxallocAdjust*marg_ineff))
-       marg_ineff =  abs(marg%integ_Creturn_leafN)**param%marg_ineff_exp
+       marg_ineff =  abs(marg%integ_Creturn_leafN/marg%integ_addN_leafN)**param%marg_ineff_exp
        leafn_adjust = min(param%MaxallocAdjust,(param%MaxallocAdjust*marg_ineff))
 
        state%debug = 0
@@ -718,7 +718,7 @@
      !increase leafC by 1g m-2
      add_lai = (state%leafC+param%add_C) / param%lca 
      marg%GPP_leafC = Photosyn(state%leafN, add_lai, state%rstep) - flux%GPP	
-     marg%Rg_leafC = param%add_C*(1.+param%Ra_grow)
+     marg%Rg_leafC = param%add_C*param%Ra_grow
      if(param%use_reich == 0) then
         marg%Rm_leafC = 0.0
      else
@@ -765,7 +765,7 @@
             param%leaf_resp_A,param%leaf_resp_B)*Ra_temp_resp - &
             reich_resp(state%rootC,state%rootN*state%Nuptake_downreg,param%leaf_resp_A,param%leaf_resp_B)*Ra_temp_resp)
     endif
-    marg%Rg_rootC= param%add_C*(1.+param%Ra_grow)
+    marg%Rg_rootC= param%add_C*param%Ra_grow
     if(avail_NH4>0)then     !there is NH4 to take up
         marginal_nh4_uptake = Nupt(1, (state%rootC + param%add_C), state%rootN, state%woodC,avail_nh4+flux%nh4_uptake,&
            	state%Nuptake_downreg,flux%GPP,Ra_temp_resp)-flux%nh4_uptake
